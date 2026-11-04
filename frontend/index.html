@@ -2,20 +2,24 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Painel - Sistema de Pagamentos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel - Sistema de Pagamentos (K3s)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         .tab { overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1; }
-        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; font-size: 16px; }
-        .tab button.active { background-color: #ccc; }
+        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; font-size: 16px; transition: 0.3s; }
+        .tab button:hover { background-color: #ddd; }
+        .tab button.active { background-color: #ccc; font-weight: bold; }
         .tabcontent { display: none; padding: 20px; border: 1px solid #ccc; border-top: none; background: white; }
         .card { padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; }
-        button.action-btn { padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button.action-btn { padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button.action-btn:hover { background: #218838; }
+        input[type="text"], input[type="number"] { padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<h2>Sistema de Transações em Rede</h2>
+<h2>Sistema de Transações em Rede (K3s)</h2>
 
 <div class="tab">
   <button class="tablinks active" onclick="openTab(event, 'PagadorTab')">Tela PAGADOR</button>
@@ -32,9 +36,12 @@
 
     <div class="card">
         <h4>Criar Ordem de Pagamento</h4>
-        <label>Pagador: </label><input type="text" id="pagador-id" value="PAGADOR_1" readonly><br><br>
-        <label>Recebedor: </label><input type="text" id="recebedor-id" value="RECEBEDOR_1"><br><br>
-        <label>Valor: </label><input type="number" id="valor-id" value="50.00"><br><br>
+        <label>Pagador: </label><br>
+        <input type="text" id="pagador-id" value="PAGADOR_1" readonly><br><br>
+        <label>Recebedor: </label><br>
+        <input type="text" id="recebedor-id" value="RECEBEDOR_1"><br><br>
+        <label>Valor (R$): </label><br>
+        <input type="number" id="valor-id" value="50.00" step="0.01"><br><br>
         <button class="action-btn" onclick="criarOrdem()">CreateOrdem</button>
     </div>
 </div>
@@ -50,14 +57,16 @@
     <div class="card">
         <h4>Ordens Recebidas para Confirmar</h4>
         <button onclick="carregarOrdensPendentes()">ListOrdens</button>
-        <div id="lista-ordens"></div>
+        <div id="lista-ordens" style="margin-top: 15px;"></div>
     </div>
 </div>
 
 <script>
-    const ORDERS_URL = 'http://localhost:8001';
-    const CONFIRM_URL = 'http://localhost:8002';
-    const ACCOUNTS_URL = 'http://localhost:8003';
+    // Configuração dinâmica para conectar às portas NodePort do K3s
+    const HOST = window.location.hostname;
+    const ORDERS_URL = `http://${HOST}:30001`;
+    const CONFIRM_URL = `http://${HOST}:30002`;
+    const ACCOUNTS_URL = `http://${HOST}:30003`;
 
     function openTab(evt, tabName) {
         var i, tabcontent, tablinks;
@@ -75,16 +84,24 @@
 
     async function carregarSaldoPagador() {
         const user = document.getElementById('pagador-id').value;
-        const res = await fetch(`${ACCOUNTS_URL}/contas/${user}`);
-        const data = await res.json();
-        document.getElementById('saldo-pagador').innerText = data.saldo.toFixed(2);
+        try {
+            const res = await fetch(`${ACCOUNTS_URL}/contas/${user}`);
+            const data = await res.json();
+            document.getElementById('saldo-pagador').innerText = data.saldo.toFixed(2);
+        } catch (e) {
+            console.error('Erro ao buscar saldo do pagador:', e);
+        }
     }
 
     async function carregarSaldoRecebedor() {
         const user = document.getElementById('recebedor-id').value;
-        const res = await fetch(`${ACCOUNTS_URL}/contas/${user}`);
-        const data = await res.json();
-        document.getElementById('saldo-recebedor').innerText = data.saldo.toFixed(2);
+        try {
+            const res = await fetch(`${ACCOUNTS_URL}/contas/${user}`);
+            const data = await res.json();
+            document.getElementById('saldo-recebedor').innerText = data.saldo.toFixed(2);
+        } catch (e) {
+            console.error('Erro ao buscar saldo do recebedor:', e);
+        }
     }
 
     async function criarOrdem() {
@@ -93,46 +110,68 @@
             recebedor: document.getElementById('recebedor-id').value,
             valor: parseFloat(document.getElementById('valor-id').value)
         };
-        const res = await fetch(`${ORDERS_URL}/ordens`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-        if(res.ok) {
-            alert('Ordem Criada e enviada via RabbitMQ!');
-            carregarSaldoPagador();
-        } else {
-            alert('Erro ao criar ordem');
+        try {
+            const res = await fetch(`${ORDERS_URL}/ordens`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            if(res.ok) {
+                alert('Ordem Criada e enviada via RabbitMQ!');
+                carregarSaldoPagador();
+            } else {
+                const err = await res.json();
+                alert('Erro ao criar ordem: ' + (err.detail || 'Falha na validação'));
+            }
+        } catch (e) {
+            alert('Erro de comunicação com o serviço de ordens');
+            console.error(e);
         }
     }
 
     async function carregarOrdensPendentes() {
-        const res = await fetch(`${CONFIRM_URL}/confirmacoes`);
-        const data = await res.json();
-        const container = document.getElementById('lista-ordens');
-        container.innerHTML = '';
-        data.forEach(item => {
-            container.innerHTML += `
-                <div style="border:1px solid #ccc; padding:10px; margin-top:5px;">
-                    <p><strong>ID:</strong> ${item.id} | <strong>De:</strong> ${item.pagador} | <strong>Valor:</strong> R$ ${item.valor} | <strong>Status:</strong> ${item.status}</p>
-                    ${item.status !== 'CONFIRMADA' ? `<button class="action-btn" onclick="confirmarOrdem('${item.id}')">ConfirmeOrdem</button>` : '<em>Confirmada</em>'}
-                </div>
-            `;
-        });
-    }
+        try {
+            const res = await fetch(`${CONFIRM_URL}/confirmacoes`);
+            const data = await res.json();
+            const container = document.getElementById('lista-ordens');
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p>Nenhuma ordem pendente.</p>';
+                return;
+            }
 
-    async function confirmarOrdem(id) {
-        const res = await fetch(`${CONFIRM_URL}/confirmacoes/${id}/confirmar`, { method: 'POST' });
-        if(res.ok) {
-            alert('Ordem confirmada! Saldo será atualizado.');
-            carregarOrdensPendentes();
-            carregarSaldoRecebedor();
-        } else {
-            alert('Erro ao confirmar ordem');
+            data.forEach(item => {
+                container.innerHTML += `
+                    <div style="border:1px solid #ccc; padding:10px; margin-top:8px; background:#fff; border-radius:4px;">
+                        <p><strong>ID:</strong> ${item.id} | <strong>De:</strong> ${item.pagador} | <strong>Para:</strong> ${item.recebedor} | <strong>Valor:</strong> R$ ${parseFloat(item.valor).toFixed(2)} | <strong>Status:</strong> ${item.status}</p>
+                        ${item.status !== 'CONFIRMADA' ? `<button class="action-btn" onclick="confirmarOrdem('${item.id}')">ConfirmeOrdem</button>` : '<span style="color:green; font-weight:bold;">✔ Confirmada</span>'}
+                    </div>
+                `;
+            });
+        } catch (e) {
+            console.error('Erro ao carregar ordens:', e);
         }
     }
 
-    // Carga inicial
+    async function confirmarOrdem(id) {
+        try {
+            const res = await fetch(`${CONFIRM_URL}/confirmacoes/${id}/confirmar`, { method: 'POST' });
+            if(res.ok) {
+                alert('Ordem confirmada! O saldo foi atualizado.');
+                carregarOrdensPendentes();
+                carregarSaldoRecebedor();
+            } else {
+                const err = await res.json();
+                alert('Erro ao confirmar ordem: ' + (err.detail || 'Falha na confirmação'));
+            }
+        } catch (e) {
+            alert('Erro de comunicação com o serviço de confirmação');
+            console.error(e);
+        }
+    }
+
+    // Carregamento inicial de saldos
     carregarSaldoPagador();
     carregarSaldoRecebedor();
 </script>
