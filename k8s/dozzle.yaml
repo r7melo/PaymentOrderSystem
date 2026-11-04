@@ -43,7 +43,10 @@ spec:
       containers:
       - name: dozzle
         image: amir20/dozzle:latest
-        command: ["/dozzle", "--mode", "k8s"]
+        env:
+        - name: DOZZLE_MODE
+          value: "k8s"
+        args: ["--mode", "k8s"]
         ports:
         - containerPort: 8080
 ---
