@@ -9,7 +9,7 @@ metadata:
   name: dozzle
 rules:
 - apiGroups: [""]
-  resources: ["pods", "pods/log"]
+  resources: ["pods", "pods/log", "nodes"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -40,12 +40,10 @@ spec:
         app: dozzle
     spec:
       serviceAccountName: dozzle
+      enableServiceLinks: false
       containers:
       - name: dozzle
         image: amir20/dozzle:latest
-        env:
-        - name: DOZZLE_MODE
-          value: "k8s"
         args: ["--mode", "k8s"]
         ports:
         - containerPort: 8080
