@@ -18,13 +18,47 @@ services:
       POSTGRES_DB: accounts
       POSTGRES_USER: accounts
       POSTGRES_PASSWORD: accounts
-    ports: ["5433:5432"] 
+    ports: ["5433:5432"]
     volumes:
       - accounts_db_data:/var/lib/postgresql/data
       - ./accounts_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./accounts_db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro 
+      - ./accounts_db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U accounts -d accounts"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  orders_db:
+    image: postgres:16
+    container_name: orders_db
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: orders
+    ports: ["5434:5432"]
+    volumes:
+      - orders_db_data:/var/lib/postgresql/data
+      - ./orders_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders -d orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  confirmation_db:
+    image: postgres:16
+    container_name: confirmation_db
+    environment:
+      POSTGRES_DB: confirmation
+      POSTGRES_USER: confirmation
+      POSTGRES_PASSWORD: confirmation
+    ports: ["5435:5432"]
+    volumes:
+      - confirmation_db_data:/var/lib/postgresql/data
+      - ./confirmation_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U confirmation -d confirmation"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -53,11 +87,17 @@ services:
     ports: ["30001:8001"]
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - DB_HOST=orders_db
+      - DB_NAME=orders
+      - DB_USER=orders
+      - DB_PASSWORD=orders
     depends_on:
       rabbitmq:
         condition: service_healthy
+      orders_db:
+        condition: service_healthy
     volumes: ["./orders_service:/app"]
-    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
   confirmation_service:
     build: ./confirmation_service
@@ -65,11 +105,17 @@ services:
     ports: ["30002:8002"]
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - DB_HOST=confirmation_db
+      - DB_NAME=confirmation
+      - DB_USER=confirmation
+      - DB_PASSWORD=confirmation
     depends_on:
       rabbitmq:
         condition: service_healthy
+      confirmation_db:
+        condition: service_healthy
     volumes: ["./confirmation_service:/app"]
-    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
 
   frontend:
     build: ./frontend
@@ -90,3 +136,5 @@ services:
 
 volumes:
   accounts_db_data:
+  orders_db_data:
+  confirmation_db_data:

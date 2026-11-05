@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-db-init
+data:
+  init.sql: |
+    -- Schema do banco de ordens (PostgreSQL): só estrutura, nenhum dado.
+    -- Executado pelo container do Postgres UMA vez, quando o volume está vazio
+    -- (via /docker-entrypoint-initdb.d). O serviço de ordens não conhece este arquivo.
+    -- Valores em CENTAVOS (BIGINT), igual ao banco de contas.
+
+    CREATE TABLE IF NOT EXISTS ordem (
+        id             TEXT        PRIMARY KEY,   -- 8 caracteres gerados pelo serviço
+        pagador        TEXT        NOT NULL,
+        recebedor      TEXT        NOT NULL,
+        valor_centavos BIGINT      NOT NULL,
+        status         TEXT        NOT NULL,      -- CRIADA (a confirmação é controlada pelo serviço de confirmação)
+        criada_em      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: orders-db-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: orders-db
+  template:
+    metadata:
+      labels:
+        app: orders-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16
+        env:
+        - name: POSTGRES_DB
+          value: "orders"
+        - name: POSTGRES_USER
+          value: "orders"
+        - name: POSTGRES_PASSWORD
+          value: "orders"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: orders-db-data
+      - name: init
+        configMap:
+          name: orders-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-db
+spec:
+  selector:
+    app: orders-db
+  ports:
+  - port: 5432
+    targetPort: 5432

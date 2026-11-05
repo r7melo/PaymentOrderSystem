@@ -19,6 +19,14 @@ spec:
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
+        - name: DB_HOST
+          value: "confirmation-db"
+        - name: DB_NAME
+          value: "confirmation"
+        - name: DB_USER
+          value: "confirmation"
+        - name: DB_PASSWORD
+          value: "confirmation"
         ports:
         - containerPort: 8002
 ---

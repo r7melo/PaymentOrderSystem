@@ -10,11 +10,11 @@ Este projeto implementa uma arquitetura baseada em microsserviços orientada a e
    - Interface Web em HTML/JS servida por Nginx na porta `30080`.
    - Oferece abas para a **Tela PAGADOR** e **Tela RECEBEDOR**.
 2. **Serviço de Ordens de Pagamento (`orders_service`)**:
-   - Cria as ordens (`CreateOrdem`) e lista as existentes (`GetOrdens`).
+   - Cria as ordens (`CreateOrdem`) e lista as existentes (`GetOrdens`), gravando no seu próprio banco (`orders_db`).
    - Publica o evento na fila `payment_orders` do RabbitMQ.
 3. **Serviço de Confirmação de Ordens (`confirmation_service`)**:
-   - Consome a fila `payment_orders` e mantém ordens pendentes.
-   - Ao confirmar (`ConfirmeOrdem`), publica o evento na fila `confirmed_orders`.
+   - Consome a fila `payment_orders` e mantém as ordens pendentes no seu próprio banco (`confirmation_db`).
+   - Ao confirmar (`ConfirmeOrdem`), marca a ordem como `CONFIRMADA` e publica o evento na fila `confirmed_orders`.
 4. **Serviço de Gestão de Contas (`accounts_service`)**:
    - Escuta a fila `confirmed_orders` para efetuar os débitos e créditos.
    - Fornece consulta de saldos para o Frontend.
@@ -47,25 +47,36 @@ PaymentOrderSystem/
 │   ├── rabbitmq.yaml
 │   ├── accounts-service.yaml
 │   ├── orders-service.yaml
+│   ├── orders-db.yaml
 │   ├── confirmation-service.yaml
+│   ├── confirmation-db.yaml
 │   ├── frontend.yaml
 │   └── dozzle.yaml
 ├── frontend/
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── index.html
+├── accounts_db/            # schema e dados de teste do banco de contas
+│   ├── init.sql
+│   └── seed.sql
+├── orders_db/              # schema do banco de ordens
+│   └── init.sql
+├── confirmation_db/        # schema do banco de confirmações
+│   └── init.sql
+├── accounts_service/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/                # config, database, routes, service, repository, consumer
 ├── orders_service/
 │   ├── Dockerfile
-│   ├── main.py
-│   └── requirements.txt
-├── confirmation_service/
-│   ├── Dockerfile
-│   ├── main.py
-│   └── requirements.txt
-└── accounts_service/
+│   ├── requirements.txt
+│   └── app/                # config, database, routes, repository, publisher, tra, acoes/
+│       └── acoes/          # criar_ordem.py, listar_ordens.py
+└── confirmation_service/
     ├── Dockerfile
-    ├── main.py
-    └── requirements.txt
+    ├── requirements.txt
+    └── app/                # config, database, routes, repository, publisher, consumer, tra, acoes/
+        └── acoes/          # receber_ordem.py, listar_confirmacoes.py, confirmar_ordem.py
 ```
 
 ---
