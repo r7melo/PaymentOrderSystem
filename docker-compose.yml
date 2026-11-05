@@ -11,17 +11,41 @@ services:
       timeout: 5s
       retries: 5
 
+  accounts_db:
+    image: postgres:16
+    container_name: accounts_db
+    environment:
+      POSTGRES_DB: accounts
+      POSTGRES_USER: accounts
+      POSTGRES_PASSWORD: accounts
+    ports: ["5433:5432"] 
+    volumes:
+      - accounts_db_data:/var/lib/postgresql/data
+      - ./accounts_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./accounts_db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U accounts -d accounts"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   accounts_service:
     build: ./accounts_service
     container_name: accounts_service
     ports: ["30003:8003"]
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - DB_HOST=accounts_db
+      - DB_NAME=accounts
+      - DB_USER=accounts
+      - DB_PASSWORD=accounts
     depends_on:
       rabbitmq:
         condition: service_healthy
+      accounts_db:
+        condition: service_healthy
     volumes: ["./accounts_service:/app"]
-    command: uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 
   orders_service:
     build: ./orders_service
@@ -49,7 +73,6 @@ services:
 
   frontend:
     build: ./frontend
-    volumes: ["./frontend/index.html:/usr/share/nginx/html/index.html:ro"]
     container_name: frontend
     ports: ["30080:80"]
     depends_on:
@@ -64,3 +87,6 @@ services:
       - "8888:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  accounts_db_data:
