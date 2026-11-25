@@ -25,6 +25,37 @@ services:
     volumes:
       - ./gateway:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  auth-db:
+    image: postgres:16-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+      POSTGRES_DB: auth_db
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+      - ./auth_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      DATABASE_URL: postgresql+asyncpg://auth_user:auth_pass@auth-db:5432/auth_db
+      JWT_SECRET: super-secret-jwt-key-payment-system
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      auth-db:
+        condition: service_healthy
+    restart: unless-stopped
 
   dozzle:
     image: amir20/dozzle:latest
@@ -33,3 +64,6 @@ services:
       - "8888:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  auth_data:

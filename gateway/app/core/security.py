@@ -1,13 +1,22 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
-from fastapi import HTTPException, Header
 from app.core.config import settings
 
+security_scheme = HTTPBearer()
 
-def get_current_user(authorization: str = Header(None)) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token ausente ou inválido.")
-    token = authorization.split(" ", 1)[1]
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+) -> dict:
     try:
-        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        return jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Token expirado ou inválido.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado ou inválido.",
+        )
