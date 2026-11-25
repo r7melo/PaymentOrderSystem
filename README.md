@@ -54,8 +54,7 @@ PaymentOrderSystem/
 └── gateway/                 # Borda HTTP/REST (detalhes em gateway/gateway.md)
 ```
 
-## 🚀 Como Executar Localmente (Docker Compose)
-
+## 🚀 Como Executar Localmente via Docker
 1. **Subir os containers (executa o `pytest` no build antes de iniciar)**:
    ```bash
    docker compose up -d --build
@@ -74,7 +73,7 @@ PaymentOrderSystem/
 
 ## 🧪 Como Testar o Que Já Está Implementado
 
-### 1. Testes Automatizados (`pytest` local sem Docker)
+### 1. Testes Automatizados
 
 ```bash
 python3 -m venv .venv
@@ -83,7 +82,8 @@ pip install -r gateway/requirements.txt -r gateway/requirements-dev.txt
 cd gateway && pytest -v
 ```
 
-### 2. Validação Ponta a Ponta via Swagger UI (`http://localhost:30000/docs`)
+### 2. Validação Ponta a Ponta via Swagger UI 
+> URL: http://localhost:30000/docs
 
 * **`GET /health`:** Retorna `200 OK` (`{"status": "ok", "service": "gateway"}`).
 * **`POST /auth/register` e `POST /auth/login`:** Validam o JSON de entrada, publicam a mensagem RPC na fila `rpc.auth.requests` do RabbitMQ e retornam `504 Gateway Timeout` após `5.0s` (comportamento esperado enquanto não houver worker ativo na fila).
