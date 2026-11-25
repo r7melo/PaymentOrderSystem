@@ -101,10 +101,8 @@ pip install -r auth_service/requirements.txt -r auth_service/requirements-dev.tx
 pytest gateway/tests auth_service/tests -v
 ```
 
-### 2. Validação Ponta a Ponta via Swagger UI 
-> URL: http://localhost:30000/docs
+### 2. Validação Ponta a Ponta via Swagger UI (`http://localhost:30000/docs`)
 
-- **`GET /health`:** Retorna `200 OK` (`{"status": "ok", "service": "gateway"}`).
-- **`POST /auth/register`:** Envia `name`, `email` e `password` via RPC para o `auth_service`, persiste no `auth-db` e retorna `201 Created` (ou `409 Conflict` se o e-mail já existir).
-- **`POST /auth/login`:** Autentica credenciais no `auth_service` e retorna `200 OK` com `access_token` (JWT) e dados do usuário (ou `401 Unauthorized`).
-- **`GET /auth/me`:** Clique no botão **Authorize** no topo do Swagger, cole o `access_token` gerado no login e execute a rota para validar o payload decodificado (`200 OK`).
+* **`GET /health`:** Retorna `200 OK` (`{"status": "ok", "service": "gateway"}`).
+* **`POST /auth/register` e `POST /auth/login`:** Validam o JSON de entrada, publicam a mensagem RPC na fila `rpc.auth.requests` do RabbitMQ e retornam `504 Gateway Timeout` após `5.0s` (comportamento esperado enquanto não houver worker ativo na fila).
+* **`GET /auth/me`:** Valida a presença e assinatura do cabeçalho `Authorization: Bearer <token>` (`401`/`403` sem token válido).
