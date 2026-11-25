@@ -1,0 +1,73 @@
+/* Estilos auxiliares - Tailwind cobre a maior parte, isso aqui é só o que falta */
+
+.empty-state {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.vinculo-item,
+.ordem-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.badge-pendente {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-aceito,
+.badge-confirmada,
+.badge-concluida {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-recusado,
+.badge-cancelada {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Toasts */
+
+.toast {
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.375rem;
+  color: white;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  animation: slide-in 0.2s ease-out;
+}
+
+.toast-error {
+  background-color: #dc2626;
+}
+
+.toast-success {
+  background-color: #16a34a;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

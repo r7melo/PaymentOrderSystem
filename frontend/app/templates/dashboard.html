@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PaymentOrderSystem{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+  <section class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-bold mb-2">Saldo</h2>
+    <p id="saldo-valor" class="text-3xl font-bold text-slate-800">R$ 0,00</p>
+  </section>
+
+  <section class="bg-white rounded-lg shadow p-6 md:col-span-2">
+    <h2 class="text-lg font-bold mb-4">Solicitar Vínculos</h2>
+
+    <form id="vinculo-form" class="flex gap-2 mb-4">
+      <input type="email" id="vinculo-email" placeholder="Email do contato" required
+        class="flex-1 border rounded px-3 py-2" />
+      <button type="submit"
+        class="bg-slate-800 text-white rounded px-4 hover:bg-slate-700">
+        Solicitar
+      </button>
+    </form>
+
+    <ul id="vinculos-list" class="flex flex-col gap-2"></ul>
+  </section>
+
+  <section class="bg-white rounded-lg shadow p-6 md:col-span-2">
+    <h2 class="text-lg font-bold mb-4">Nova ordem de pagamento</h2>
+
+    <form id="ordem-form" class="flex flex-col gap-4">
+      <div>
+        <label for="ordem-valor" class="block text-sm font-medium mb-1">
+          Valor por destino (R$)
+        </label>
+        <input type="number" id="ordem-valor" step="0.01" min="0.01" required
+          class="w-full border rounded px-3 py-2" />
+      </div>
+
+      <div>
+        <span class="block text-sm font-medium mb-1">Destinos (vínculos aceitos)</span>
+        <div id="ordem-destinos-container" class="flex flex-col gap-1">
+          </div>
+      </div>
+
+      <button type="submit"
+        class="bg-slate-800 text-white rounded py-2 hover:bg-slate-700 self-start px-6">
+        Criar ordem
+      </button>
+    </form>
+  </section>
+
+  <section class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Notificações</h2>
+    <ul id="notificacoes-list" class="flex flex-col gap-2 max-h-96 overflow-y-auto"></ul>
+  </section>
+
+  <section class="bg-white rounded-lg shadow p-6 md:col-span-3">
+    <h2 class="text-lg font-bold mb-4">Ordens</h2>
+    <ul id="ordens-list" class="flex flex-col gap-2"></ul>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/notifications.js"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}
